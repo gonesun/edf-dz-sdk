@@ -2,7 +2,6 @@ package com.ttk.dz.openapi.sdk;
 
 import com.alibaba.fastjson.JSONObject;
 import com.ttk.dz.openapi.dto.OpenApiBusinessException;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -11,18 +10,15 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.logging.Logger;
 
-public class DzHttpUtil {
-
-    private static final Logger log = Logger.getLogger(DzHttpUtil.class.getName());
+class DzHttpUtil {
 
     private static String sdkVersion = null;
 
@@ -40,20 +36,17 @@ public class DzHttpUtil {
         }
     }
 
-    public static JSONObject post(String url, JSONObject requestBody, Map<String, String> map) {
+    static JSONObject post(String url, JSONObject requestBody, Map<String, String> map) {
         return post(url, requestBody.toJSONString(), map);
     }
 
-    public static JSONObject post(String url, String requestBody, Map<String, String> map) {
-
+    private static JSONObject post(String url, String requestBody, Map<String, String> map) {
         if (url == null || url.isEmpty()) {
             throw new OpenApiBusinessException("","url不能为空");
         }
         if (requestBody == null) {
             throw new OpenApiBusinessException("","requestBody不能为null");
         }
-
-        long startTime = System.currentTimeMillis();
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpPost httpPost = new HttpPost(url);
 
@@ -72,9 +65,8 @@ public class DzHttpUtil {
                 httpPost.setHeader(entry.getKey(), entry.getValue());
             }
         }
-        String charSet = "UTF-8";
         // 请求体body
-        StringEntity entity = new StringEntity(requestBody, charSet);
+        StringEntity entity = new StringEntity(requestBody, StandardCharsets.UTF_8);
         httpPost.setEntity(entity);
         CloseableHttpResponse httpResponse = null;
         try {
@@ -82,14 +74,12 @@ public class DzHttpUtil {
             httpResponse = httpClient.execute(httpPost);
             // 响应状态码
             int statusCode = httpResponse.getStatusLine().getStatusCode();
-            if (statusCode == 200) {
-                HttpEntity httpEntity = httpResponse.getEntity();
-                String res_body_string = EntityUtils.toString(httpEntity, charSet);
-                JSONObject jsonObject = JSONObject.parseObject(res_body_string);
-                return jsonObject;
-            } else {
+            if(statusCode != 200){
                 throw new OpenApiBusinessException("","rest请求失败，(" + url + ")状态码：" + statusCode);
             }
+            HttpEntity httpEntity = httpResponse.getEntity();
+            String res_body_string = EntityUtils.toString(httpEntity, StandardCharsets.UTF_8);
+            return JSONObject.parseObject(res_body_string);
         } catch (Exception e) {
             throw new OpenApiBusinessException("","rest请求过程中有异常发生：" + e.getMessage());
         } finally {
@@ -100,7 +90,6 @@ public class DzHttpUtil {
                 if (httpClient != null) {
                     httpClient.close();
                 }
-
             } catch (Exception e) {
                 throw new OpenApiBusinessException("","http关闭时有异常发生：" + e.getMessage());
             }
@@ -119,13 +108,16 @@ public class DzHttpUtil {
      * @return 对象
      * @throws NoSuchAlgorithmException 算法异常
      */
-    public static JSONObject postRestfulRequest(String url, String access_token, String appSecret,
-            JSONObject requestBodyData, Map<String, String> header, String appKey) throws NoSuchAlgorithmException {
+    static JSONObject postRestfulRequest(String url, String access_token, String appSecret,
+                                         JSONObject requestBodyData, Map<String, String> header, String appKey) throws NoSuchAlgorithmException {
         return postRestfulRequest(url, access_token, appSecret, requestBodyData.toJSONString(), header, appKey);
     }
+    static JSONObject postRestfulRequest(String url, String access_token, String appSecret, JSONObject requestBodyData) throws NoSuchAlgorithmException {
+        return postRestfulRequest(url, access_token, appSecret, requestBodyData.toJSONString(), null, null);
+    }
 
-    public static JSONObject postRestfulRequest(String url, String access_token, String appSecret,
-            String requestBodyData, Map<String, String> header, String appKey) throws NoSuchAlgorithmException {
+    private static JSONObject postRestfulRequest(String url, String access_token, String appSecret,
+                                                 String requestBodyData, Map<String, String> header, String appKey) throws NoSuchAlgorithmException {
         if (url == null || url.isEmpty()) {
             throw new OpenApiBusinessException("","url不能为空");
         }
@@ -135,22 +127,13 @@ public class DzHttpUtil {
         if (appSecret == null || appSecret.isEmpty()) {
             throw new OpenApiBusinessException("","appSecret不能为空");
         }
-
-        if (url.endsWith("/")) {
-            url = url.substring(0, url.length() - 1);
-        }
+        url = DzStringUtil.formatUrl(url);
         // 签名准备
         long timestamp = System.currentTimeMillis();
         // 签名前
-        String before = "POST" + "_" + MD5(requestBodyData) + "_" + timestamp + "_" + access_token + "_" + appSecret;
-        // 签名后
-        String sign = "API-SV1:" + appKey + ":" + Base64.encodeBase64String(MD5(before).getBytes());
-
         String strToSign = "access_token=" + access_token + "&timestamp=" + timestamp + "&" + requestBodyData + "{" + appSecret + "}";
-        sign = MD5(strToSign).toUpperCase();
-        System.out.println("请求签名：" + sign);
-        // url中参数串
-//        String uriParameters = "?access_token=" + access_token + "&timestamp=" + timestamp + "&sign=" + sign;
+        // 签名
+        String sign = MD5(strToSign).toUpperCase();
         // header里额外参数
         if (header == null) {
             header = new HashMap<>();
@@ -158,11 +141,9 @@ public class DzHttpUtil {
         header.put("access_token", access_token);
         header.put("timestamp", String.valueOf(timestamp));
         header.put("sign", sign);
-        header.put("req_date", String.valueOf(timestamp));
-        header.put("req_sign", sign);
 
         // 发送请求
-        JSONObject jsonObject = DzHttpUtil.post(url, requestBodyData, header);
+        JSONObject jsonObject = post(url, requestBodyData, header);
 
         // 得到结果
         return jsonObject;
@@ -173,16 +154,16 @@ public class DzHttpUtil {
      * @param sourceStr sourceStr
      * @return sourceStr
      */
-    public static String MD5(String sourceStr) {
+    static String MD5(String sourceStr) {
         String result = "";
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
-            md.update(sourceStr.getBytes("UTF-8"));
+            md.update(sourceStr.getBytes(StandardCharsets.UTF_8));
             byte b[] = md.digest();
             int i;
-            StringBuffer buf = new StringBuffer("");
-            for (int offset = 0; offset < b.length; offset++) {
-                i = b[offset];
+            StringBuilder buf = new StringBuilder();
+            for (byte aB : b) {
+                i = aB;
                 if (i < 0) {
                     i += 256;
                 }
@@ -194,8 +175,6 @@ public class DzHttpUtil {
             }
             result = buf.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new OpenApiBusinessException("",e.getMessage());
-        } catch (UnsupportedEncodingException e) {
             throw new OpenApiBusinessException("",e.getMessage());
         }
         return result;

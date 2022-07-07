@@ -34,4 +34,14 @@ public final class DzStringUtil {
         return sb.toString();
     }
 
+    public static String formatUrl(String url){
+        if(isNullOrEmpty(url)){
+            return url;
+        }
+        if (url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return url;
+    }
+
 }
