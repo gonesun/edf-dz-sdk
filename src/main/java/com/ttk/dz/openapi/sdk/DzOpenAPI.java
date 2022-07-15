@@ -1,25 +1,13 @@
 package com.ttk.dz.openapi.sdk;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.ttk.dz.openapi.dto.OpenApiBusinessException;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class DzOpenAPI {
-
-    private static Log logger = LogFactory.getLog(DzOpenAPI.class);
     /**
      * api 网关主机地址
      */
     private String apiHost;
-
-
     /**
      * 嵌入网页打开地址
      */
@@ -98,7 +86,6 @@ public class DzOpenAPI {
         } catch (Exception e) {
             throw new OpenApiBusinessException("", e.getMessage());
         }
-
     }
 
     /**
