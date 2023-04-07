@@ -26,4 +26,9 @@ final class ConstCode {
      * token请求地址
      */
     static final String accessToken = "/edf/oauth2/access_token";
+
+    /**
+     * 获取页面地址
+     */
+    static final String webUrl = "/api/getWebUrl";
 }

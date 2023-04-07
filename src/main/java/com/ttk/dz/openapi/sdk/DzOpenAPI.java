@@ -3,6 +3,9 @@ package com.ttk.dz.openapi.sdk;
 import com.alibaba.fastjson.JSONObject;
 import com.ttk.dz.openapi.dto.OpenApiBusinessException;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class DzOpenAPI {
     /**
      * api 网关主机地址
@@ -79,6 +82,9 @@ public class DzOpenAPI {
         }
         //1、body数据准备
         JSONObject requestBody = JSONObject.parseObject(jsonParameter);
+        if(path.equals(ConstCode.webUrl)){
+            return getWebUrl(path, requestBody);
+        }
         //2、发送请求
         try {
             String url = apiHost + path.trim();
@@ -167,6 +173,45 @@ public class DzOpenAPI {
         expiresIn = jsonObjectBody.getLong("expires_in");
         lastTokenTime = System.currentTimeMillis();
         refreshToken = jsonObjectBody.getString("refresh_token");
+    }
+
+    /**
+     * 获取验证码
+     *
+     * @param orgId orgId
+     * @return JSONObject
+     */
+    public JSONObject getAuthCode(String orgId) {
+        //1、body数据准备
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("userId", "0");
+        requestBody.put("orgId", orgId);
+        //2、发送请求
+        Map<String, String> headerMap = new HashMap<>();
+        return DzHttpUtil.post(apiHost + "/edf/oauth2/getAuthCode?access_token=" + getAccessToken(), requestBody, headerMap);
+    }
+
+    /**
+     * 获取页面访问地址
+     *
+     * @param path         请求url :/api/getWebUrl
+     * @param requestBody 参数
+     * @return JSONObject
+     */
+    private JSONObject getWebUrl(String path, JSONObject requestBody) {
+        //2、发送请求
+        try {
+            JSONObject ttkResultDto = getAuthCode(requestBody.getString("orgId"));
+            String errorCode = ttkResultDto.getJSONObject("head").getString("errorCode");
+            if ("0".equals(errorCode)) {
+                requestBody.put("code", ttkResultDto.getString("body"));
+            }
+            requestBody.put("webHost", webHost);
+            requestBody.put("appKey", appKey);
+            return DzHttpUtil.postRestfulRequest(apiHost + path.trim(), getAccessToken(), appSecret, requestBody, null);
+        } catch (Exception e) {
+            throw new OpenApiBusinessException("",e.getMessage());
+        }
     }
 
     public String getApiHost() {

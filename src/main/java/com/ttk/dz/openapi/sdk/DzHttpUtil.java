@@ -97,6 +97,10 @@ class DzHttpUtil {
 
     }
 
+    static JSONObject postRestfulRequest(String url, String access_token, String appSecret,
+                                         JSONObject requestBodyData, Map<String, String> header) throws NoSuchAlgorithmException {
+        return postRestfulRequest(url, access_token, appSecret, requestBodyData.toJSONString(), header, null);
+    }
     /**
      * 业务数据签名
      * @param url url

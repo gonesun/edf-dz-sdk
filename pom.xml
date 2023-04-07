@@ -6,14 +6,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.gonesun</groupId>
     <artifactId>edf-dz-sdk</artifactId>
-    <version>1.0.4-SNAPSHOT</version>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>8</version>
     </parent>
-    <name>dz-openapi-sdk</name>
+    <name>edf-dz-sdk</name>
     <url>https://github.com/gonesun/edf-dz-sdk</url>
     <description>The sdk for edf framework</description>
 
