@@ -83,6 +83,9 @@ public class DzOpenAPI {
         //1、body数据准备
         JSONObject requestBody = JSONObject.parseObject(jsonParameter);
         if(path.equals(ConstCode.webUrl)){
+            if (DzStringUtil.isNullOrEmpty(apiHost)) {
+                throw new OpenApiBusinessException("", "调用getWebUrl接口，需要带webHost参数实例化");
+            }
             return getWebUrl(path, requestBody);
         }
         //2、发送请求
